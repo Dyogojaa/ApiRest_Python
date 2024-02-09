@@ -1,6 +1,9 @@
 from flask_restful import Resource, reqparse
 from models.usuario import UserModel
-from flask_jwt_extended import create_access_token, jwt_required
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+
+
+
 
 atributos = reqparse.RequestParser()
 atributos.add_argument('login', type=str, required=True, help="The field 'login' cannot be left blank.")
@@ -14,7 +17,7 @@ class User(Resource):
             return user.json()
         return {'message': 'User not found.'}, 404
 
-    @jwt_required
+    @jwt_required()
     def delete(self, user_id):
         user = UserModel.find_user(user_id)
         if user:
@@ -46,3 +49,11 @@ class UserLogin(Resource):
             token_de_acesso = create_access_token(identity=user.user_id)
             return {'access_token': token_de_acesso}, 200
         return {'message': 'The username or password is incorrect.'}, 401 # Unauthorized
+
+class UserLogout(Resource):
+
+    @jwt_required()
+    def post(self):
+        jwt_id = get_jwt_identity()  # Obter o identificador do usuário do token
+        BLACKLIST.add(jwt_id)
+        return {'message': 'Logged out successfully!'}, 200

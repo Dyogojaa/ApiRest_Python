@@ -1,6 +1,7 @@
 from flask_restful import Resource, reqparse
 from models.hotel import HotelModel
 from sqlalchemy.exc import SQLAlchemyError
+from flask_jwt_extended import jwt_required
 
 
 class Hoteis(Resource):
@@ -22,7 +23,7 @@ class Hotel(Resource):
         if hotel:            
             return hotel.json()
         return {'message': 'Hotel não encontrado'}, 404
-                
+    @jwt_required()
     def post(self, hotel_id):
         
         if HotelModel.find_hotel(hotel_id):
@@ -38,7 +39,7 @@ class Hotel(Resource):
         except SQLAlchemyError as e:
             return {'message': f'Ocorreu um erro no banco de dados: {str(e)}'}, 500
         
-        
+    @jwt_required()
     def put(self, hotel_id):              
         dados = Hotel.argumentos.parse_args()         
         hotel_encontrado = HotelModel.find_hotel(hotel_id)
@@ -55,7 +56,7 @@ class Hotel(Resource):
         except SQLAlchemyError as e:
             return {'message': f'Ocorreu um erro no banco de dados: {str(e)}'}, 500            
         
-    
+    @jwt_required()
     def delete(self, hotel_id):
         
         hotel = HotelModel.find_hotel(hotel_id)
