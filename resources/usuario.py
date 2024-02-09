@@ -2,8 +2,6 @@ from flask_restful import Resource, reqparse
 from models.usuario import UserModel
 from flask_jwt_extended import create_access_token, jwt_required
 
-
-
 atributos = reqparse.RequestParser()
 atributos.add_argument('login', type=str, required=True, help="The field 'login' cannot be left blank.")
 atributos.add_argument('senha', type=str, required=True, help="The field 'senha' cannot be left blank.")
