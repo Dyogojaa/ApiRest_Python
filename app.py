@@ -24,12 +24,15 @@ with app.app_context():
 
 @jwt.token_in_blocklist_loader
 def verifica_blacklist(jwt_header, jwt_payload):
-    return jwt_payload['jti'] in BLACKLIST
+    print("Chegou na função verifica_blacklist.")
+    jwt_id = jwt_payload['jti']
+    print(f"Token ID em verifica_blacklist: {jwt_id}, BLACKLIST: {BLACKLIST}")
+    return jwt_id in BLACKLIST
+
 
 @jwt.revoked_token_loader
-def token_de_acesso_invalidado():
-    return jsonify({'message': 'You have been logged out.'}), 401  # unauthorized
-
+def token_de_acesso_invalidado(jwt_header, jwt_payload):
+    return {'message': 'You have been logged out.'}, 401  # unauthorized
 
 
 api.add_resource(Hoteis, '/hoteis')

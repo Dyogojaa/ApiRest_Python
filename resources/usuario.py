@@ -1,9 +1,7 @@
 from flask_restful import Resource, reqparse
 from models.usuario import UserModel
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-
-
-
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt
+from blacklist import BLACKLIST
 
 atributos = reqparse.RequestParser()
 atributos.add_argument('login', type=str, required=True, help="The field 'login' cannot be left blank.")
@@ -37,6 +35,20 @@ class UserRegister(Resource):
         user.save_user()
         return {'message': 'User created successfully!'}, 201 # Created
 
+# class UserLogin(Resource):
+
+#     @classmethod
+#     def post(cls):
+#         dados = atributos.parse_args()
+
+#         user = UserModel.find_by_login(dados['login'])
+
+#         if user and user.senha == dados['senha']:
+#             token_de_acesso = create_access_token(identity=user.user_id)
+#             return {'access_token': token_de_acesso}, 200
+#         return {'message': 'The username or password is incorrect.'}, 401 # Unauthorized
+    
+    
 class UserLogin(Resource):
 
     @classmethod
@@ -46,14 +58,19 @@ class UserLogin(Resource):
         user = UserModel.find_by_login(dados['login'])
 
         if user and user.senha == dados['senha']:
-            token_de_acesso = create_access_token(identity=user.user_id)
+            # Converta o user_id para string ao criar o token
+            token_de_acesso = create_access_token(identity=str(user.user_id))
             return {'access_token': token_de_acesso}, 200
-        return {'message': 'The username or password is incorrect.'}, 401 # Unauthorized
+        return {'message': 'The username or password is incorrect.'}, 401  # Unauthorized
+        
+
 
 class UserLogout(Resource):
 
     @jwt_required()
     def post(self):
-        jwt_id = get_jwt_identity()  # Obter o identificador do usuário do token
+        jwt_token = get_jwt()  # Obtém o token bruto
+        jwt_id = jwt_token['jti']
         BLACKLIST.add(jwt_id)
+        print(f"BLACKLIST após o logout: {BLACKLIST}")
         return {'message': 'Logged out successfully!'}, 200
