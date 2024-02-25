@@ -1,22 +1,12 @@
 from flask_restful import Resource, reqparse
 from models.hotel import HotelModel
+from models.site import SiteModel
 from sqlalchemy.exc import SQLAlchemyError
 from flask_jwt_extended import jwt_required
 from flask import request
 import sqlite3
 import os
-
-def normalize_path_params(**dados):
-    cidade = dados.get('cidade', None)
-    return {
-        'estrelas_min': dados.get('estrelas_min', 0),
-        'estrelas_max': dados.get('estrelas_max', 5),
-        'diaria_min': dados.get('diaria_min', 0),
-        'diaria_max': dados.get('diaria_max', 10000),
-        'cidade': cidade.lower() if cidade else None,
-        'limit': dados.get('limit', 50),
-        'offset': dados.get('offset', 0)
-    }
+from resources.filtros import normalize_path_params
 
 class Hoteis(Resource):
     def get(self):
@@ -32,8 +22,9 @@ class Hoteis(Resource):
         print("Parametros antes da verificação de cidade:", parametros)
 
         consulta = "SELECT * FROM hoteis \
-                    WHERE (estrelas BETWEEN ? AND ?) \
-                    AND (diaria BETWEEN ? AND ?)"
+                WHERE (estrelas BETWEEN ? AND ?) \
+                AND (diaria BETWEEN ? AND ?)"
+                    
 
         tupla = (
             parametros['estrelas_min'], parametros['estrelas_max'],
@@ -57,7 +48,8 @@ class Hoteis(Resource):
                 'nome': linha[1],
                 'estrelas': linha[2],
                 'diaria': linha[3],
-                'cidade': linha[4]
+                'cidade': linha[4],
+                'site_id': linha[5]
             }
             for linha in resultado
         ]
@@ -75,7 +67,7 @@ class Hotel(Resource):
     argumentos.add_argument('estrelas', type=float, required=True, help='O Campo Estrelas é obrigatório.')
     argumentos.add_argument('diaria')
     argumentos.add_argument('cidade')
-    
+    argumentos.add_argument('site_id', type=int, required=True, help='O Campo Site ID é obrigatório.')
     
     def get(self, hotel_id):
         hotel = HotelModel.find_hotel(hotel_id)
@@ -91,6 +83,10 @@ class Hotel(Resource):
         
         dados = Hotel.argumentos.parse_args()
         hotel = HotelModel(hotel_id=hotel_id, **dados)
+        
+        if not SiteModel.find_site_id(dados.get('site_id')):
+            return {'message': f'Site {dados['site_id']} Não encontrado .'}, 400
+        
 
         try:
             hotel.save()
@@ -103,6 +99,9 @@ class Hotel(Resource):
     def put(self, hotel_id):              
         dados = Hotel.argumentos.parse_args()         
         hotel_encontrado = HotelModel.find_hotel(hotel_id)
+        
+        if not SiteModel.find_site_id(dados.get('site_id')):
+            return {'message': f'Site {dados['site_id']} Não encontrado .'}, 400
                 
         if hotel_encontrado:            
             hotel_encontrado.update(**dados)
